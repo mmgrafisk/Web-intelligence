@@ -30,6 +30,12 @@ export const socialStatisticSchema = z.enum([
   "saves",
   "followers",
 ]);
+export const collectionIdSchema = z.enum([
+  "inbox",
+  "research",
+  "inspiration",
+  "watch-later",
+]);
 
 const dateTimeSchema = z.string().datetime({ offset: true });
 const httpUrlSchema = z
@@ -121,5 +127,17 @@ export const syncOperationSchema = z
   })
   .strict();
 
+export const captureRequestSchema = z
+  .object({
+    version: z.literal(1),
+    source: z.literal("extension"),
+    url: httpUrlSchema,
+    title: z.string().trim().min(1).max(2_000),
+    collection: collectionIdSchema,
+    requestedAt: dateTimeSchema,
+  })
+  .strict();
+
 export type BookmarkDto = z.infer<typeof bookmarkSchema>;
 export type SyncOperationDto = z.infer<typeof syncOperationSchema>;
+export type CaptureRequestDto = z.infer<typeof captureRequestSchema>;

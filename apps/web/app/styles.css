@@ -795,6 +795,16 @@ h1 {
   font-size: 11px;
 }
 
+.inline-notice {
+  margin: -6px 0 18px;
+  padding: 9px 11px;
+  border: 1px solid #d9d4f2;
+  border-radius: 8px;
+  background: #f3f0ff;
+  color: #5544a3;
+  font-size: 11px;
+}
+
 .composer-footer {
   padding-top: 19px;
   border-top: 1px solid var(--line);

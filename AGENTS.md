@@ -86,5 +86,6 @@ Near-complete work stays open with the remaining gate stated plainly.
 ## Current execution boundary
 
 The active project is Bookmark Intelligence Platform in the Hellomedia Linear
-workspace. The next implementation gate is HEL-33: review bootstrap PR #1.
-Review may proceed autonomously; merge requires Michael's explicit approval.
+workspace. HEL-37 is the active implementation issue on a branch stacked above
+HEL-36. HEL-33 and HEL-36 remain in review. Review may proceed autonomously;
+merging any pull request requires Michael's explicit approval.

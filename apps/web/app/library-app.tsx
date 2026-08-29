@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { decodeCaptureHash } from "@bookmark-platform/capture";
 import type { Bookmark } from "@bookmark-platform/domain";
 import {
   BookmarkLocalDatabase,
@@ -52,6 +53,7 @@ function hostInitial(source: string): string {
 
 export default function LibraryApp() {
   const runtimeRef = useRef<LocalRuntime | null>(null);
+  const captureHandledRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [allActiveBookmarks, setAllActiveBookmarks] = useState<Bookmark[]>([]);
@@ -61,6 +63,7 @@ export default function LibraryApp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [composerNotice, setComposerNotice] = useState("");
   const [search, setSearch] = useState("");
   const [view, setView] = useState<LibraryView>("library");
   const [collectionFilter, setCollectionFilter] =
@@ -135,6 +138,86 @@ export default function LibraryApp() {
   }, [ready, refresh]);
 
   useEffect(() => {
+    const runtime = runtimeRef.current;
+    if (!ready || !runtime || captureHandledRef.current) return;
+    captureHandledRef.current = true;
+
+    let cancelled = false;
+
+    void (async () => {
+      let capture;
+      try {
+        capture = decodeCaptureHash(window.location.hash);
+      } catch {
+        window.history.replaceState(
+          null,
+          "",
+          `${window.location.pathname}${window.location.search}`,
+        );
+        setError(
+          "The Quick Save request was invalid. Open the extension settings and check your library address.",
+        );
+        return;
+      }
+      if (!capture || cancelled) return;
+
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+
+      const captureDraft: BookmarkDraft = {
+        collection: capture.collection,
+        notes: "",
+        tags: "",
+        title: capture.title,
+        url: capture.url,
+      };
+
+      try {
+        const candidate = createBookmarkFromDraft(captureDraft, {
+          id: crypto.randomUUID(),
+          now: new Date().toISOString(),
+        });
+        const duplicate = await runtime.repository.getByCanonicalUrl(
+          candidate.canonicalUrl,
+        );
+        if (cancelled) return;
+
+        setError("");
+        setNotice("");
+        if (duplicate && duplicate.deletedAt === undefined) {
+          setEditing(duplicate);
+          setDraft(draftForBookmark(duplicate));
+          setComposerNotice(
+            "This page is already saved. You can update its collection, tags or notes.",
+          );
+        } else {
+          setEditing(null);
+          setDraft(captureDraft);
+          setComposerNotice(
+            duplicate
+              ? "This page is in trash. Confirm to restore it to your library."
+              : "Sent from the browser extension. Review the details, then confirm the save.",
+          );
+        }
+        setComposerOpen(true);
+      } catch {
+        if (!cancelled) {
+          setError(
+            "The page sent by Quick Save could not be prepared for your library.",
+          );
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  useEffect(() => {
     const updateConnection = () => setOnline(navigator.onLine);
     updateConnection();
     window.addEventListener("online", updateConnection);
@@ -161,6 +244,7 @@ export default function LibraryApp() {
         setComposerOpen(false);
         setEditing(null);
         setDraft(emptyBookmarkDraft);
+        setComposerNotice("");
       }
     };
     window.addEventListener("keydown", handleShortcut);
@@ -184,6 +268,7 @@ export default function LibraryApp() {
   function openComposer(bookmark?: Bookmark) {
     setError("");
     setNotice("");
+    setComposerNotice("");
     setEditing(bookmark ?? null);
     setDraft(bookmark ? draftForBookmark(bookmark) : emptyBookmarkDraft);
     setComposerOpen(true);
@@ -194,6 +279,7 @@ export default function LibraryApp() {
     setComposerOpen(false);
     setEditing(null);
     setDraft(emptyBookmarkDraft);
+    setComposerNotice("");
   }
 
   async function saveDraft() {
@@ -248,6 +334,7 @@ export default function LibraryApp() {
       setComposerOpen(false);
       setEditing(null);
       setDraft(emptyBookmarkDraft);
+      setComposerNotice("");
       await refresh();
     } catch (saveError) {
       setError(
@@ -652,6 +739,9 @@ export default function LibraryApp() {
               </label>
             </div>
 
+            {composerNotice && (
+              <div className="inline-notice">{composerNotice}</div>
+            )}
             {error && <div className="inline-error">{error}</div>}
 
             <div className="composer-footer">

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   transpilePackages: [
+    "@bookmark-platform/capture",
     "@bookmark-platform/domain",
     "@bookmark-platform/schemas",
     "@bookmark-platform/storage",

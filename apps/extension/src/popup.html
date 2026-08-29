@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bookmark Intelligence Quick Save</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, Arial, sans-serif;
+      }
+      body {
+        box-sizing: border-box;
+        width: 330px;
+        margin: 0;
+        padding: 20px;
+        color: #202126;
+        background: #f8f7f3;
+      }
+      .brand {
+        margin: 0 0 18px;
+        color: #6d58d9;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0 0 5px;
+        overflow: hidden;
+        font-size: 17px;
+        line-height: 1.3;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .url {
+        margin: 0 0 18px;
+        overflow: hidden;
+        color: #777782;
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      label {
+        display: grid;
+        gap: 7px;
+        margin-bottom: 13px;
+        color: #55545d;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      select,
+      button {
+        box-sizing: border-box;
+        width: 100%;
+        border-radius: 9px;
+        font: inherit;
+      }
+      select {
+        padding: 10px;
+        border: 1px solid #d9d7cf;
+        background: white;
+      }
+      button {
+        padding: 11px;
+        border: 0;
+        cursor: pointer;
+        font-weight: 800;
+      }
+      #save {
+        background: #6d58d9;
+        color: white;
+      }
+      #save:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+      #options {
+        margin-top: 7px;
+        background: transparent;
+        color: #62616a;
+        font-size: 11px;
+      }
+      .status {
+        min-height: 16px;
+        margin: 11px 0 0;
+        color: #62616a;
+        font-size: 11px;
+      }
+      .status.success {
+        color: #315d50;
+      }
+      .status.error {
+        color: #8f3832;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="brand">Bookmark Intelligence</p>
+    <h1 id="page-title">Current page</h1>
+    <p class="url" id="page-url"></p>
+    <label>
+      Save to
+      <select id="destination"></select>
+    </label>
+    <button id="save" type="button">Send to library</button>
+    <p class="status" id="status" aria-live="polite"></p>
+    <button id="options" type="button">Library settings</button>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>
