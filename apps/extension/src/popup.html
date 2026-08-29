@@ -94,6 +94,83 @@
         color: #8f3832;
       }
     </style>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, Arial, sans-serif;
+      }
+      body {
+        width: 360px;
+        padding: 22px;
+        color: #f3f4f6;
+        background: #111214;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin: 0 0 22px;
+        color: #f3f4f6;
+        font-size: 12px;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+      .brand::before {
+        content: "B";
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 8px 8px 8px 2px;
+        background: #4f7cff;
+        color: white;
+        font-size: 15px;
+        font-weight: 800;
+        box-shadow: 0 6px 16px rgba(79, 124, 255, 0.24);
+      }
+      h1 {
+        margin-bottom: 6px;
+        color: #f8f9fb;
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .url {
+        margin-bottom: 20px;
+        color: #7e8795;
+      }
+      label {
+        color: #a2a9b5;
+      }
+      select {
+        border-color: #3a404a;
+        background: #1b1d20;
+        color: #f3f4f6;
+      }
+      button {
+        border-radius: 9px;
+      }
+      #save {
+        background: #4f7cff;
+      }
+      #save:hover:not(:disabled) {
+        background: #3c66d9;
+      }
+      #options {
+        color: #a2a9b5;
+      }
+      #options:hover {
+        color: #f3f4f6;
+      }
+      .status {
+        color: #a2a9b5;
+      }
+      .status.success {
+        color: #9fe0c7;
+      }
+      .status.error {
+        color: #ffb3b3;
+      }
+    </style>
   </head>
   <body>
     <p class="brand">Bookmark Intelligence</p>

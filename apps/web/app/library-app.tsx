@@ -117,6 +117,7 @@ export default function LibraryApp() {
         runtimeRef.current = { database, repository, library, deviceId };
         setReady(true);
       } catch (initializationError) {
+        if (cancelled) return;
         setError(
           initializationError instanceof Error
             ? initializationError.message
