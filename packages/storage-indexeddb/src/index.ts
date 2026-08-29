@@ -12,6 +12,7 @@ import type {
   BookmarkRepository,
 } from "@bookmark-platform/storage";
 import type { SyncOperation, SyncQueue } from "@bookmark-platform/sync";
+import { createSyncOperation } from "@bookmark-platform/sync";
 
 interface LocalSetting {
   key: string;
@@ -62,6 +63,14 @@ export class IndexedDbBookmarkRepository implements BookmarkRepository {
 
   async get(id: string): Promise<Bookmark | undefined> {
     const bookmark = await this.database.bookmarks.get(id);
+    return bookmark === undefined ? undefined : validateBookmark(bookmark);
+  }
+
+  async getByCanonicalUrl(canonicalUrl: string): Promise<Bookmark | undefined> {
+    const bookmark = await this.database.bookmarks
+      .where("canonicalUrl")
+      .equals(canonicalUrl)
+      .first();
     return bookmark === undefined ? undefined : validateBookmark(bookmark);
   }
 
@@ -185,6 +194,145 @@ export class IndexedDbSyncQueue implements SyncQueue {
         });
       },
     );
+  }
+}
+
+export interface LocalMutationResult {
+  bookmark: Bookmark;
+  operation: SyncOperation;
+}
+
+export class IndexedDbLocalLibrary {
+  constructor(private readonly database: BookmarkLocalDatabase) {}
+
+  async getOrCreateDeviceId(
+    createId: () => string = () => crypto.randomUUID(),
+  ): Promise<string> {
+    return this.database.transaction("rw", this.database.settings, async () => {
+      const existing = await this.database.settings.get("device-id");
+      if (typeof existing?.value === "string" && existing.value.length > 0) {
+        return existing.value;
+      }
+
+      const deviceId = createId();
+      await this.database.settings.put({ key: "device-id", value: deviceId });
+      return deviceId;
+    });
+  }
+
+  async save(
+    bookmark: Bookmark,
+    deviceId: string,
+  ): Promise<LocalMutationResult> {
+    const validatedBookmark = validateBookmark(bookmark);
+    const operation = validateSyncOperation(
+      createSyncOperation({
+        deviceId,
+        entityType: "bookmark",
+        entityId: bookmark.id,
+        action: "upsert",
+        payload: { ...bookmark },
+        baseRevision: Math.max(0, bookmark.revision - 1),
+        now: bookmark.updatedAt,
+      }),
+    );
+
+    await this.database.transaction(
+      "rw",
+      this.database.bookmarks,
+      this.database.syncOperations,
+      async () => {
+        await this.database.bookmarks.put(validatedBookmark);
+        await this.database.syncOperations.put(operation);
+      },
+    );
+
+    return { bookmark: validatedBookmark, operation };
+  }
+
+  async softDelete(
+    id: string,
+    deviceId: string,
+    now = new Date().toISOString(),
+  ): Promise<LocalMutationResult | undefined> {
+    return this.database.transaction(
+      "rw",
+      this.database.bookmarks,
+      this.database.syncOperations,
+      async () => {
+        const existing = await this.database.bookmarks.get(id);
+        if (existing === undefined) return undefined;
+
+        const bookmark = validateBookmark({
+          ...existing,
+          deletedAt: now,
+          updatedAt: now,
+          revision: existing.revision + 1,
+        });
+        const operation = validateSyncOperation(
+          createSyncOperation({
+            deviceId,
+            entityType: "bookmark",
+            entityId: id,
+            action: "delete",
+            payload: null,
+            baseRevision: existing.revision,
+            now,
+          }),
+        );
+
+        await this.database.bookmarks.put(bookmark);
+        await this.database.syncOperations.put(operation);
+        return { bookmark, operation };
+      },
+    );
+  }
+
+  async restore(
+    id: string,
+    deviceId: string,
+    now = new Date().toISOString(),
+  ): Promise<LocalMutationResult | undefined> {
+    return this.database.transaction(
+      "rw",
+      this.database.bookmarks,
+      this.database.syncOperations,
+      async () => {
+        const existing = await this.database.bookmarks.get(id);
+        if (existing === undefined || existing.deletedAt === undefined) {
+          return undefined;
+        }
+
+        const { deletedAt: _deletedAt, ...active } = existing;
+        const bookmark = validateBookmark({
+          ...active,
+          updatedAt: now,
+          revision: existing.revision + 1,
+        });
+        const operation = validateSyncOperation(
+          createSyncOperation({
+            deviceId,
+            entityType: "bookmark",
+            entityId: id,
+            action: "upsert",
+            payload: { ...bookmark },
+            baseRevision: existing.revision,
+            now,
+          }),
+        );
+
+        await this.database.bookmarks.put(bookmark);
+        await this.database.syncOperations.put(operation);
+        return { bookmark, operation };
+      },
+    );
+  }
+
+  async pendingOperationCount(): Promise<number> {
+    return this.database.syncOperations
+      .where("state")
+      .anyOf(["pending", "failed", "dead-letter"])
+      .count();
   }
 }
 

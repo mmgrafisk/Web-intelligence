@@ -4,20 +4,35 @@ Local-first bookmark, media and creator-intelligence platform. Product requireme
 
 ## Current slice
 
-This bootstrap is intentionally small and honest:
+The current slice delivers a real accountless local library while keeping cloud
+mode optional:
 
-- `apps/web`: Next.js App Router shell for the local-first library experience.
+- `apps/web`: responsive Next.js library for saving, organizing, searching,
+  deleting and restoring bookmarks. IndexedDB is the source of truth and the
+  cached app shell can reopen offline after its first successful load.
 - `apps/extension`: Chromium Manifest V3 Quick Save shell with remembered destination.
 - `packages/domain`: canonical bookmark types and pure rules.
 - `packages/schemas`: runtime validation for untrusted inputs and persisted records.
 - `packages/auth`: accountless local identity and cloud-auth contracts.
 - `packages/storage`: portable repository contracts and an in-memory reference adapter.
-- `packages/storage-indexeddb`: tested browser metadata persistence and durable sync outbox.
+- `packages/storage-indexeddb`: validated browser persistence with atomic
+  bookmark/outbox mutations, a stable local device identity and recovery after
+  database reopen.
 - `packages/sync`: idempotent operations, bounded retry and deterministic conflict rules.
 - `packages/cloud-supabase`: optional publishable-key cloud adapter.
 - `docs/adr`: accepted architecture decisions and reversal paths.
 
-The web shell is a product slice, not a claim that cloud auth, remote sync, large-media archiving or AI are complete. Local persistence and sync foundations are implemented behind tested interfaces and remain usable without cloud credentials.
+The local web workflow is functional without an account or cloud credentials.
+Cloud auth, remote sync, extension-to-library integration, large-media archiving
+and AI remain separate roadmap items and are not presented as complete.
+
+## Verified local workflow
+
+1. Save an HTTP or HTTPS page with a title, collection, tags and notes.
+2. Search the persisted bookmark and reorganize it later.
+3. Reload or reopen the app and recover the same IndexedDB data and outbox.
+4. Move an item to Trash and restore it without losing its organization.
+5. Reopen the cached app shell while the browser network is offline.
 
 ## Development
 

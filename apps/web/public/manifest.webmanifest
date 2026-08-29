@@ -1,0 +1,9 @@
+{
+  "name": "Bookmark Intelligence",
+  "short_name": "Bookmarks",
+  "description": "A private, local-first library for everything worth keeping.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f6f2",
+  "theme_color": "#20211d"
+}
