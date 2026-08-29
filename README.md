@@ -23,6 +23,8 @@ mode optional:
 - `packages/sync`: idempotent operations, bounded retry and deterministic conflict rules.
 - `packages/cloud-supabase`: optional publishable-key cloud adapter.
 - `docs/adr`: accepted architecture decisions and reversal paths.
+- `services/web-intelligence`: separate Python intelligence runtime; HEL-59 adds
+  the shared SSRF-safe HTTP/browser crawl admission and resource budgets.
 
 The local web workflow is functional without an account or cloud credentials.
 Cloud auth, remote sync, large-media archiving and AI remain separate roadmap
