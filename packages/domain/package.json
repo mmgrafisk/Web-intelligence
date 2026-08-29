@@ -1,0 +1,7 @@
+{
+  "name": "@bookmark-platform/domain",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "lint": "tsc --noEmit", "test": "tsc --noEmit", "typecheck": "tsc --noEmit" }
+}
