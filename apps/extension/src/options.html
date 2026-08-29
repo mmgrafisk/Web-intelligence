@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bookmark Intelligence settings</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, Arial, sans-serif;
+      }
+      body {
+        margin: 0;
+        color: #202126;
+        background: #f4f2ed;
+      }
+      main {
+        box-sizing: border-box;
+        max-width: 600px;
+        margin: 60px auto;
+        padding: 32px;
+        border: 1px solid #dedbd2;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 14px 40px rgba(44, 42, 55, 0.08);
+      }
+      .eyebrow {
+        color: #6d58d9;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 8px 0;
+        font-size: 28px;
+      }
+      .intro {
+        margin: 0 0 28px;
+        color: #68666f;
+        line-height: 1.55;
+      }
+      form,
+      label {
+        display: grid;
+        gap: 9px;
+      }
+      form {
+        gap: 20px;
+      }
+      label {
+        color: #4f4e56;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      input,
+      select {
+        padding: 12px;
+        border: 1px solid #d8d5cd;
+        border-radius: 9px;
+        background: white;
+        font: inherit;
+      }
+      button {
+        justify-self: start;
+        padding: 12px 18px;
+        border: 0;
+        border-radius: 9px;
+        background: #6d58d9;
+        color: white;
+        cursor: pointer;
+        font-weight: 800;
+      }
+      .status {
+        min-height: 18px;
+        margin: 0;
+        font-size: 12px;
+      }
+      .success {
+        color: #315d50;
+      }
+      .error {
+        color: #8f3832;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Bookmark Intelligence</p>
+      <h1>Quick Save settings</h1>
+      <p class="intro">
+        Choose the web app that receives captures and the collection selected by
+        default.
+      </p>
+      <form id="settings-form">
+        <label>
+          Library address
+          <input
+            id="library-url"
+            required
+            type="url"
+            placeholder="http://localhost:3000/"
+          />
+        </label>
+        <label>
+          Default collection
+          <select id="destination"></select>
+        </label>
+        <button type="submit">Save settings</button>
+        <p class="status" id="status" aria-live="polite"></p>
+      </form>
+    </main>
+    <script src="options.js" type="module"></script>
+  </body>
+</html>

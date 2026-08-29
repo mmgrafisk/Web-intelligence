@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@bookmark-platform/capture": "workspace:*",
     "@bookmark-platform/domain": "workspace:*",
     "@bookmark-platform/storage-indexeddb": "workspace:*",
     "next": "16.3.3",

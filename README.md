@@ -10,7 +10,9 @@ mode optional:
 - `apps/web`: responsive Next.js library for saving, organizing, searching,
   deleting and restoring bookmarks. IndexedDB is the source of truth and the
   cached app shell can reopen offline after its first successful load.
-- `apps/extension`: Chromium Manifest V3 Quick Save shell with remembered destination.
+- `apps/extension`: Chromium Manifest V3 Quick Save extension with a remembered
+  destination and a validated, user-confirmed handoff to the canonical library.
+- `packages/capture`: shared runtime-validated extension-to-library capture protocol.
 - `packages/domain`: canonical bookmark types and pure rules.
 - `packages/schemas`: runtime validation for untrusted inputs and persisted records.
 - `packages/auth`: accountless local identity and cloud-auth contracts.
@@ -23,8 +25,8 @@ mode optional:
 - `docs/adr`: accepted architecture decisions and reversal paths.
 
 The local web workflow is functional without an account or cloud credentials.
-Cloud auth, remote sync, extension-to-library integration, large-media archiving
-and AI remain separate roadmap items and are not presented as complete.
+Cloud auth, remote sync, large-media archiving and AI remain separate roadmap
+items and are not presented as complete.
 
 ## Verified local workflow
 
@@ -47,7 +49,21 @@ pnpm build
 pnpm verify
 ```
 
-Node.js 22+ is required. Load `apps/extension` as an unpacked extension in Chrome, Edge or Brave after building the extension bundle when the build pipeline is added.
+Node.js 22+ is required.
+
+### Browser extension
+
+Build the extension and load the generated folder as an unpacked extension in
+Chrome, Edge or Brave:
+
+```text
+pnpm --filter @bookmark-platform/extension build
+```
+
+Load `apps/extension/dist`, then open **Library settings** in the extension and
+enter the address where the web app is running (for example,
+`http://localhost:3000/`). Quick Save opens a validated confirmation form in
+the web app; the bookmark is written to IndexedDB only after the user confirms.
 
 Cloud mode is disabled when the optional Supabase environment variables are absent. Do not use the existing ExposPrint Supabase project for this product. A dedicated project, provider configuration and migration verification are required before cloud mode is exposed to users.
 
