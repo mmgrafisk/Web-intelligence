@@ -1,0 +1,1 @@
+-- V1 has no shared seed data. Tests create their own isolated fixtures.

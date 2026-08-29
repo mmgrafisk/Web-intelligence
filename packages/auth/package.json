@@ -1,5 +1,5 @@
 {
-  "name": "@bookmark-platform/domain",
+  "name": "@bookmark-platform/auth",
   "private": true,
   "type": "module",
   "exports": {
