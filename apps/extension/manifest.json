@@ -4,8 +4,16 @@
   "version": "0.1.0",
   "description": "Save the current page to your remembered Bookmark Intelligence destination.",
   "permissions": ["storage", "contextMenus", "activeTab", "sidePanel"],
-  "action": { "default_title": "Save to Bookmark Intelligence", "default_popup": "popup.html" },
+  "action": {
+    "default_title": "Save to Bookmark Intelligence",
+    "default_popup": "popup.html"
+  },
   "background": { "service_worker": "service-worker.js", "type": "module" },
-  "commands": { "quick-save": { "suggested_key": { "default": "Alt+S" }, "description": "Save the current page" } },
+  "commands": {
+    "quick-save": {
+      "suggested_key": { "default": "Alt+S" },
+      "description": "Save the current page"
+    }
+  },
   "side_panel": { "default_path": "popup.html" }
 }

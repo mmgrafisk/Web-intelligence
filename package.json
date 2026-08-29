@@ -2,13 +2,31 @@
   "name": "bookmark-intelligence-platform",
   "private": true,
   "packageManager": "pnpm@10.15.0",
-  "engines": { "node": ">=20.9" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "turbo run build",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "db:lint": "supabase db lint --local --schema public --level warning --fail-on error",
+    "db:reset": "supabase db reset --local --no-seed",
+    "db:test": "supabase test db --local",
     "dev": "turbo run dev --parallel",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck"
   },
-  "devDependencies": { "turbo": "^2.5.6", "typescript": "^5.9.2" }
+  "devDependencies": {
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.3",
+    "eslint-config-prettier": "10.1.8",
+    "fake-indexeddb": "6.2.5",
+    "prettier": "3.9.6",
+    "supabase": "2.116.0",
+    "turbo": "2.10.12",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
 }
