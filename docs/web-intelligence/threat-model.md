@@ -1,6 +1,6 @@
 # Web Intelligence Platform Threat Model
 
-Status: accepted implementation boundary for HEL-58
+Status: accepted implementation boundary for HEL-58; HEL-60 isolation mapped
 
 ## Assets
 
@@ -44,6 +44,14 @@ Status: accepted implementation boundary for HEL-58
 | Quality/security gate | No destination publishing           | Validate and stage records                               | No host access                            | No publisher secret                  | Can reject; cannot approve alone                     |
 | Publisher             | Destination allowlist only          | Read approved publication/audit records                  | Temporary render/diff volume              | Destination-specific least privilege | Only component allowed to apply approved publication |
 | Admin UI              | Talks to API only                   | No direct database access                                | No host access                            | Browser session only                 | No bypass of approval policy                         |
+
+The concrete network and credential grants are enforced by
+`services/web-intelligence/compose.isolation.json` and documented in
+`docs/web-intelligence/worker-isolation.md`. Untrusted workers have no shared
+network with the control or publisher zones. Crawler and browser public egress
+is possible only through the allowlisted gateway; the AI worker has no public
+egress. No untrusted worker receives a Compose secret, publisher/control
+environment variable, host bind mount, engine socket or SSH agent.
 
 ## Required security tests before release
 

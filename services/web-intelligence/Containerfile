@@ -1,0 +1,16 @@
+FROM python:3.12-slim-bookworm@sha256:0f5b26b9518d002b6173fd61daad821fa340635ebfec5bba471013f9ca114579
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/opt/web-intelligence/src
+
+RUN groupadd --gid 10001 webint \
+    && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin webint \
+    && mkdir -p /opt/web-intelligence /var/lib/web-intelligence/snapshots \
+    && chown -R 10001:10001 /opt/web-intelligence /var/lib/web-intelligence
+
+WORKDIR /opt/web-intelligence
+COPY --chown=10001:10001 src ./src
+
+USER 10001:10001
+CMD ["python", "-m", "web_intelligence.isolated_worker", "unconfigured"]

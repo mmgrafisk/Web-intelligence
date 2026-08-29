@@ -153,9 +153,7 @@ class SourcePolicyGuardTests(unittest.TestCase):
         self.assertEqual(too_many.exception.reason, DecisionReason.REDIRECT_LIMIT)
 
     def test_dns_change_to_private_address_fails_connection_revalidation(self) -> None:
-        guard, audit = guard_for(
-            {"rebind.test": [("93.184.216.34",), ("127.0.0.1",)]}
-        )
+        guard, audit = guard_for({"rebind.test": [("93.184.216.34",), ("127.0.0.1",)]})
         target = guard.authorize("https://rebind.test/")
 
         with self.assertRaises(CrawlPolicyError) as raised:
