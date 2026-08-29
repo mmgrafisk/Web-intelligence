@@ -55,6 +55,13 @@ export interface SyncTransport {
   push(operations: SyncOperation[]): Promise<SyncPushResult>;
 }
 
+export class SyncProtocolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SyncProtocolError";
+  }
+}
+
 export interface VersionStamp {
   deviceId: string;
   operationId: string;
@@ -104,6 +111,73 @@ export function nextRetryAt(now: string, attemptCount: number): string {
   return new Date(new Date(now).getTime() + delay).toISOString();
 }
 
+export function validateSyncPushResult(
+  submittedOperationIds: readonly string[],
+  result: SyncPushResult,
+): SyncPushResult {
+  assertUniqueSubmittedOperationIds(submittedOperationIds);
+
+  const batchIds = new Set<string>();
+  for (const operationId of submittedOperationIds) {
+    batchIds.add(operationId);
+  }
+
+  const acceptedIds = new Set<string>();
+  for (const operationId of result.acceptedOperationIds) {
+    if (!batchIds.has(operationId)) {
+      throw new SyncProtocolError(
+        `Accepted operation ID is outside the submitted batch: ${operationId}`,
+      );
+    }
+    if (acceptedIds.has(operationId)) {
+      throw new SyncProtocolError(
+        `Accepted operation ID is duplicated: ${operationId}`,
+      );
+    }
+    acceptedIds.add(operationId);
+  }
+
+  const rejectedIds = new Set<string>();
+  for (const rejected of result.rejected) {
+    if (!batchIds.has(rejected.operationId)) {
+      throw new SyncProtocolError(
+        `Rejected operation ID is outside the submitted batch: ${rejected.operationId}`,
+      );
+    }
+    if (rejectedIds.has(rejected.operationId)) {
+      throw new SyncProtocolError(
+        `Rejected operation ID is duplicated: ${rejected.operationId}`,
+      );
+    }
+    if (acceptedIds.has(rejected.operationId)) {
+      throw new SyncProtocolError(
+        `Operation ID is both accepted and rejected: ${rejected.operationId}`,
+      );
+    }
+    rejectedIds.add(rejected.operationId);
+  }
+
+  return {
+    ...result,
+    acceptedOperationIds: [...result.acceptedOperationIds],
+    rejected: result.rejected.map((rejected) => ({ ...rejected })),
+  };
+}
+
+function assertUniqueSubmittedOperationIds(
+  submittedOperationIds: readonly string[],
+): void {
+  const seen = new Set<string>();
+  for (const operationId of submittedOperationIds) {
+    if (seen.has(operationId)) {
+      throw new SyncProtocolError(
+        `Submitted sync batch contains duplicate operation ID: ${operationId}`,
+      );
+    }
+    seen.add(operationId);
+  }
+}
+
 export class SyncRunner {
   constructor(
     private readonly queue: SyncQueue,
@@ -120,14 +194,19 @@ export class SyncRunner {
     );
     if (operations.length === 0) return null;
 
-    const result = await this.transport.push(operations);
+    const submittedOperationIds = operations.map((operation) => operation.id);
+    assertUniqueSubmittedOperationIds(submittedOperationIds);
+    const submittedById = new Map(
+      operations.map((operation) => [operation.id, { ...operation }]),
+    );
+    const result = validateSyncPushResult(
+      submittedOperationIds,
+      await this.transport.push(operations),
+    );
     await this.queue.acknowledge(result.acceptedOperationIds);
 
-    const byId = new Map(
-      operations.map((operation) => [operation.id, operation]),
-    );
     for (const rejected of result.rejected) {
-      const operation = byId.get(rejected.operationId);
+      const operation = submittedById.get(rejected.operationId);
       if (operation === undefined) continue;
       await this.queue.fail(
         operation.id,

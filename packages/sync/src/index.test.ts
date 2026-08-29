@@ -4,10 +4,14 @@ import {
   createSyncOperation,
   nextRetryAt,
   selectConflictWinner,
+  SyncProtocolError,
   SyncRunner,
   type SyncOperation,
+  type SyncPushResult,
   type SyncQueue,
 } from "./index";
+
+const NOW = "2026-08-29T08:00:00.000Z";
 
 class TestQueue implements SyncQueue {
   operations: SyncOperation[] = [];
@@ -52,6 +56,36 @@ class TestQueue implements SyncQueue {
       )
       .slice(0, limit);
   }
+}
+
+function createTestOperation(id = "01BATCH"): SyncOperation {
+  return createSyncOperation({
+    id,
+    deviceId: "device-1",
+    entityType: "bookmark",
+    entityId: `bookmark-${id}`,
+    action: "upsert",
+    payload: { title: id },
+    baseRevision: 0,
+    now: NOW,
+  });
+}
+
+async function expectProtocolRejection(
+  result: SyncPushResult,
+  expectedMessage: string,
+): Promise<void> {
+  const queue = new TestQueue();
+  await queue.enqueue(createTestOperation());
+  const before = queue.operations.map((operation) => ({ ...operation }));
+  const runner = new SyncRunner(queue, {
+    async push() {
+      return result;
+    },
+  });
+
+  await expect(runner.runOnce(NOW)).rejects.toThrowError(expectedMessage);
+  expect(queue.operations).toEqual(before);
 }
 
 describe("sync foundation", () => {
@@ -120,5 +154,70 @@ describe("sync foundation", () => {
       { id: "01ACCEPT", state: "acked" },
       { id: "01RETRY", state: "failed", attemptCount: 1 },
     ]);
+  });
+
+  it("rejects accepted and rejected IDs outside the submitted batch before queue mutation", async () => {
+    await expectProtocolRejection(
+      { acceptedOperationIds: ["01OUTSIDE"], rejected: [] },
+      "Accepted operation ID is outside the submitted batch: 01OUTSIDE",
+    );
+    await expectProtocolRejection(
+      {
+        acceptedOperationIds: [],
+        rejected: [
+          { operationId: "01OUTSIDE", reason: "invalid", retryable: false },
+        ],
+      },
+      "Rejected operation ID is outside the submitted batch: 01OUTSIDE",
+    );
+  });
+
+  it("rejects duplicate accepted and rejected response IDs before queue mutation", async () => {
+    await expectProtocolRejection(
+      { acceptedOperationIds: ["01BATCH", "01BATCH"], rejected: [] },
+      "Accepted operation ID is duplicated: 01BATCH",
+    );
+    await expectProtocolRejection(
+      {
+        acceptedOperationIds: [],
+        rejected: [
+          { operationId: "01BATCH", reason: "first", retryable: true },
+          { operationId: "01BATCH", reason: "second", retryable: false },
+        ],
+      },
+      "Rejected operation ID is duplicated: 01BATCH",
+    );
+  });
+
+  it("rejects operation IDs reported as both accepted and rejected before queue mutation", async () => {
+    await expectProtocolRejection(
+      {
+        acceptedOperationIds: ["01BATCH"],
+        rejected: [
+          { operationId: "01BATCH", reason: "conflict", retryable: false },
+        ],
+      },
+      "Operation ID is both accepted and rejected: 01BATCH",
+    );
+  });
+
+  it("rejects duplicate operation IDs in the submitted batch", async () => {
+    const queue = new TestQueue();
+    await queue.enqueue(createTestOperation());
+    await queue.enqueue(createTestOperation());
+    let pushCalls = 0;
+    const runner = new SyncRunner(queue, {
+      async push() {
+        pushCalls += 1;
+        return { acceptedOperationIds: ["01BATCH"], rejected: [] };
+      },
+    });
+
+    await expect(runner.runOnce(NOW)).rejects.toBeInstanceOf(SyncProtocolError);
+    expect(pushCalls).toBe(0);
+    expect(queue.operations).toHaveLength(2);
+    expect(
+      queue.operations.every((operation) => operation.state === "pending"),
+    ).toBe(true);
   });
 });
