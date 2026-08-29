@@ -14,7 +14,7 @@ import threading
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Protocol, Self
 from urllib.parse import SplitResult, urlsplit, urlunsplit
@@ -179,9 +179,7 @@ class MemoryAuditSink:
             return tuple(self._decisions)
 
 
-_NUMERIC_HOST = re.compile(
-    r"^(?:0[xX][0-9a-fA-F]+|[0-9]+)(?:\.(?:0[xX][0-9a-fA-F]+|[0-9]+)){0,3}$"
-)
+_NUMERIC_HOST = re.compile(r"^(?:0[xX][0-9a-fA-F]+|[0-9]+)(?:\.(?:0[xX][0-9a-fA-F]+|[0-9]+)){0,3}$")
 
 
 def _parse_ipv4_component(component: str) -> int:
@@ -262,7 +260,7 @@ class SourcePolicyGuard:
         self.policy = policy
         self.resolver = resolver or SocketHostResolver()
         self.audit_sink = audit_sink or (lambda _decision: None)
-        self.clock = clock or (lambda: datetime.now(timezone.utc))
+        self.clock = clock or (lambda: datetime.now(UTC))
 
     def authorize(self, raw_url: str) -> AuthorizedTarget:
         normalized_url: str | None = None
@@ -407,9 +405,7 @@ class SourcePolicyGuard:
             display_host = hostname
         default_port = (scheme == "http" and port == 80) or (scheme == "https" and port == 443)
         netloc = display_host if default_port else f"{display_host}:{port}"
-        normalized = urlunsplit(
-            SplitResult(scheme, netloc, parts.path or "/", parts.query, "")
-        )
+        normalized = urlunsplit(SplitResult(scheme, netloc, parts.path or "/", parts.query, ""))
         return normalized, scheme, hostname, port, direct_address
 
     @staticmethod

@@ -1,0 +1,153 @@
+{
+  "name": "web-intelligence-isolation",
+  "services": {
+    "egress-gateway": {
+      "build": {
+        "context": ".",
+        "dockerfile": "Containerfile"
+      },
+      "command": ["python", "-m", "web_intelligence.egress_gateway"],
+      "environment": {
+        "WI_EGRESS_ALLOW_DOMAINS": "${WI_EGRESS_ALLOW_DOMAINS:-blocked.invalid}",
+        "WI_EGRESS_ALLOWED_PORTS": "80,443",
+        "WI_EGRESS_LISTEN_HOST": "0.0.0.0",
+        "WI_EGRESS_LISTEN_PORT": "8080"
+      },
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "privileged": false,
+      "pids_limit": 128,
+      "init": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=32m"],
+      "networks": ["crawler-zone", "browser-zone", "public-egress"]
+    },
+    "crawler": {
+      "build": {
+        "context": ".",
+        "dockerfile": "Containerfile"
+      },
+      "command": [
+        "python",
+        "-m",
+        "web_intelligence.isolated_worker",
+        "crawler"
+      ],
+      "environment": {
+        "HTTP_PROXY": "http://egress-gateway:8080",
+        "HTTPS_PROXY": "http://egress-gateway:8080",
+        "NO_PROXY": ""
+      },
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "privileged": false,
+      "pids_limit": 128,
+      "init": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=64m"],
+      "volumes": ["crawler-snapshots:/var/lib/web-intelligence/snapshots"],
+      "networks": ["crawler-zone"]
+    },
+    "browser-worker": {
+      "build": {
+        "context": ".",
+        "dockerfile": "Containerfile"
+      },
+      "command": [
+        "python",
+        "-m",
+        "web_intelligence.isolated_worker",
+        "browser"
+      ],
+      "environment": {
+        "HTTP_PROXY": "http://egress-gateway:8080",
+        "HTTPS_PROXY": "http://egress-gateway:8080",
+        "NO_PROXY": ""
+      },
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "privileged": false,
+      "pids_limit": 256,
+      "init": true,
+      "shm_size": "256m",
+      "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=128m"],
+      "volumes": ["browser-snapshots:/var/lib/web-intelligence/snapshots"],
+      "networks": ["browser-zone"]
+    },
+    "ai-worker": {
+      "build": {
+        "context": ".",
+        "dockerfile": "Containerfile"
+      },
+      "command": ["python", "-m", "web_intelligence.isolated_worker", "ai"],
+      "environment": {
+        "NO_PROXY": "*"
+      },
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "privileged": false,
+      "pids_limit": 128,
+      "init": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=64m"],
+      "networks": ["ai-zone"]
+    },
+    "publisher-sentinel": {
+      "profiles": ["isolation-test"],
+      "build": {
+        "context": ".",
+        "dockerfile": "Containerfile"
+      },
+      "command": ["python", "-m", "http.server", "8080"],
+      "environment": {
+        "PUBLISHER_CANARY": "runtime-only-test-secret"
+      },
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "privileged": false,
+      "pids_limit": 64,
+      "init": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=16m"],
+      "networks": ["publisher-zone"]
+    },
+    "control-sentinel": {
+      "profiles": ["isolation-test"],
+      "build": {
+        "context": ".",
+        "dockerfile": "Containerfile"
+      },
+      "command": ["python", "-m", "http.server", "8080"],
+      "environment": {
+        "CONTROL_CANARY": "runtime-only-test-secret"
+      },
+      "user": "10001:10001",
+      "read_only": true,
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "privileged": false,
+      "pids_limit": 64,
+      "init": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=16m"],
+      "networks": ["control-zone"]
+    }
+  },
+  "networks": {
+    "crawler-zone": { "internal": true },
+    "browser-zone": { "internal": true },
+    "ai-zone": { "internal": true },
+    "publisher-zone": { "internal": true },
+    "control-zone": { "internal": true },
+    "public-egress": { "internal": false }
+  },
+  "volumes": {
+    "crawler-snapshots": {},
+    "browser-snapshots": {}
+  }
+}
